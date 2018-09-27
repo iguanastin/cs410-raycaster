@@ -1,11 +1,11 @@
 How to compile:
-    1. Navigate to folder containing lib and .java files
-    2. Run: javac -classpath commons-math3-3.6.1.jar Modeltoworld.java ObjMesh.java
+    1. Navigate to project folder (same level as "pom.xml" file)
+    2. Run: mvn package
+    3. Run: cp ./target/cs410-1.0-jar-with-dependencies.jar ./Modeltoworld.jar
 
 USAGE:
-    java Modeltoworld [path to driver file]
+    java -jar Modeltoworld.jar [DRIVER_FILE]
 
-    E.g.:
-
-    java Modeltoworld ./driver01.txt
+    OPTIONS:
+        DRIVER_FILE - Path to driver file
 
