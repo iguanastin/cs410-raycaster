@@ -9,7 +9,9 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class ObjMesh {
+public class Model {
+
+    private Scene scene;
 
     private ArrayList<RealVector> geoVerts = new ArrayList<>();
     private ArrayList<RealVector> texCoords = new ArrayList<>();
@@ -17,8 +19,12 @@ public class ObjMesh {
     private ArrayList<String> faces = new ArrayList<>();
 
 
-    public ObjMesh(File file) throws FileNotFoundException {
+    public Model(double wx, double wy, double wz, double theta, double scale, double tx, double ty, double tz, File file) throws FileNotFoundException {
         Scanner scan = new Scanner(file);
+
+        rotate(wx, wy, wz, theta);
+        scale(scale);
+        translate(tx, ty, tz);
 
         while (scan.hasNextLine()) {
             String line = scan.nextLine();
@@ -41,6 +47,10 @@ public class ObjMesh {
         }
 
         scan.close();
+    }
+
+    public Model(String[] parts) throws FileNotFoundException {
+        this(Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), Double.parseDouble(parts[4]), Double.parseDouble(parts[5]), Double.parseDouble(parts[6]), Double.parseDouble(parts[7]), Double.parseDouble(parts[8]), new File(parts[9]));
     }
 
     public void scale(double factor) {
@@ -155,6 +165,14 @@ public class ObjMesh {
         if (parts.length == 5) w = Double.parseDouble(parts[4]);
         RealVector vec = new ArrayRealVector(new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), w}, false);
         geoVerts.add(vec);
+    }
+
+    public void setScene(Scene scene) {
+        this.scene = scene;
+    }
+
+    public Scene getScene() {
+        return scene;
     }
 
 }
