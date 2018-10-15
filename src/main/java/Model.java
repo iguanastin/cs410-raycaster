@@ -30,12 +30,8 @@ public class Model {
         this.scale = scale;
         this.translate = new ArrayRealVector(new double[]{tx, ty, tz});
 
+        // Load object data from file
         Scanner scan = new Scanner(file);
-
-        rotate(wx, wy, wz, theta);
-        scale(scale);
-        translate(tx, ty, tz);
-
         while (scan.hasNextLine()) {
             String line = scan.nextLine();
 
@@ -51,12 +47,17 @@ public class Model {
                     parseVectorNormal(parts);
                 } else if (id.equalsIgnoreCase("f")) {
                     parseFace(parts);
+                } else {
+                    // Unknown type
                 }
                 //TODO: Other id parsing https://en.wikipedia.org/wiki/Wavefront_.obj_file
             }
         }
-
         scan.close();
+
+        rotate(wx, wy, wz, theta);
+        scale(scale);
+        translate(tx, ty, tz);
     }
 
     public Model(String[] parts) throws FileNotFoundException {
