@@ -54,4 +54,15 @@ public class Camera {
         return scene;
     }
 
+    @Override
+    public String toString() {
+        return "Camera:" + "\n" +
+                "  eye: " + eye + "\n" +
+                "  look: " + look + "\n" +
+                "  up: " + up + "\n" +
+                "  d: " + d + "\n" +
+                "  bounds: [(" + xmin + ", " + ymin + "), (" + xmax + ", " + ymax + ")]" + "\n" +
+                "  res: (" + width + ", " + height + ")" + "\n" +
+                "  ambient: " + ambient;
+    }
 }

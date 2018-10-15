@@ -11,14 +11,20 @@ public class Scene {
     private List<Model> models = new ArrayList<>();
     private List<Light> lights = new ArrayList<>();
 
+    private File driver;
+
 
     public Scene(File driver, boolean saveTransformedModels) throws FileNotFoundException {
+        this.driver = driver;
 
-        //Ensure driver folder is made
-        String dirName = driver.getName();
-        if (dirName.contains(".")) dirName = dirName.substring(0, dirName.lastIndexOf('.'));
-        File dir = new File(dirName);
-        if (!dir.exists() || !dir.isDirectory()) dir.mkdir();
+        File dir = null;
+        if (saveTransformedModels) {
+            //Ensure driver folder is made
+            String dirName = driver.getName();
+            if (dirName.contains(".")) dirName = dirName.substring(0, dirName.lastIndexOf('.'));
+            dir = new File(dirName);
+            if (!dir.exists() || !dir.isDirectory()) dir.mkdir();
+        }
 
         //Read driver file line by line
         Scanner scan = new Scanner(driver);
@@ -95,6 +101,25 @@ public class Scene {
     private void setCamera(Camera cam) {
         this.cam = cam;
         cam.setScene(this);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Scene:\n  driver_file: ");
+        sb.append(driver);
+        sb.append('\n');
+        sb.append(cam);
+        sb.append('\n');
+        lights.forEach(light -> {
+            sb.append(light);
+            sb.append('\n');
+        });
+        models.forEach(model -> {
+            sb.append(model);
+            sb.append('\n');
+        });
+
+        return sb.toString();
     }
 
 }

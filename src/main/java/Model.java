@@ -13,6 +13,10 @@ public class Model {
 
     private Scene scene;
 
+    private File file;
+    private double theta, scale;
+    private RealVector rotate, translate;
+
     private ArrayList<RealVector> geoVerts = new ArrayList<>();
     private ArrayList<RealVector> texCoords = new ArrayList<>();
     private ArrayList<RealVector> vecNorms = new ArrayList<>();
@@ -20,6 +24,12 @@ public class Model {
 
 
     public Model(double wx, double wy, double wz, double theta, double scale, double tx, double ty, double tz, File file) throws FileNotFoundException {
+        this.file = file;
+        this.rotate = new ArrayRealVector(new double[]{wx, wy, wz});
+        this.theta = theta;
+        this.scale = scale;
+        this.translate = new ArrayRealVector(new double[]{tx, ty, tz});
+
         Scanner scan = new Scanner(file);
 
         rotate(wx, wy, wz, theta);
@@ -173,6 +183,16 @@ public class Model {
 
     public Scene getScene() {
         return scene;
+    }
+
+    @Override
+    public String toString() {
+        return "Model: " + "\n" +
+                "  file: " + file + "\n" +
+                "  rotate: " + rotate + "\n" +
+                "  theta: " + theta + "\n" +
+                "  scale: " + scale + "\n" +
+                "  translate: " + translate;
     }
 
 }

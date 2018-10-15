@@ -40,4 +40,12 @@ public class Light {
         return scene;
     }
 
+    @Override
+    public String toString() {
+        return "Light:\n" +
+                "  pos: " + getPos() + "\n" +
+                "  color: " + getColor() + "\n" +
+                "  infinite: " + isInfinite();
+    }
+
 }

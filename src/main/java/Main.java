@@ -14,6 +14,8 @@ public class Main {
 
         try {
             Scene scene = new Scene(new File(driver), false);
+
+            System.out.println(scene);
         } catch (FileNotFoundException e) {
             System.out.println("Driver file does not exist: " + driver);
             e.printStackTrace();
