@@ -20,7 +20,7 @@ public class Model {
     private ArrayList<RealVector> geoVerts = new ArrayList<>();
     private ArrayList<RealVector> texCoords = new ArrayList<>();
     private ArrayList<RealVector> vecNorms = new ArrayList<>();
-    private ArrayList<String> faces = new ArrayList<>();
+    private ArrayList<int[]> faces = new ArrayList<>();
 
 
     public Model(double wx, double wy, double wz, double theta, double scale, double tx, double ty, double tz, File file) throws FileNotFoundException {
@@ -145,8 +145,9 @@ public class Model {
 
 //        vecNorms.forEach(vec -> writer.println("vn " + vec.getEntry(0) + " " + vec.getEntry(1) + " " + vec.getEntry(2)));
 
-        //TODO: Fix this once I start loading in faces properly
-        faces.forEach(writer::println);
+        faces.forEach(face -> {
+            writer.println("f " + face[0] + " " + face[1] + " " + face[2]);
+        });
 
         //TODO: Write others
 
@@ -154,8 +155,8 @@ public class Model {
     }
 
     private void parseFace(String[] parts) {
-        //TODO: Actually load in faces in a usable state instead of a cheap workaround
-        faces.add(String.join(" ", parts));
+        int[] face = {Integer.parseInt(parts[1].substring(0, parts[1].indexOf('/'))), Integer.parseInt(parts[2].substring(0, parts[2].indexOf('/'))), Integer.parseInt(parts[3].substring(0, parts[3].indexOf('/')))};
+        faces.add(face);
     }
 
     private void parseVectorNormal(String[] parts) {
@@ -192,7 +193,9 @@ public class Model {
                 "  rotate: " + rotate + "\n" +
                 "  theta: " + theta + "\n" +
                 "  scale: " + scale + "\n" +
-                "  translate: " + translate;
+                "  translate: " + translate + "\n" +
+                "  vertex_count: " + geoVerts.size() + "\n" +
+                "  face_count: " + faces.size();
     }
 
 }
