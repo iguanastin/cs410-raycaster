@@ -5,8 +5,9 @@ How to compile:
 
 
 USAGE:
-    $ java -jar target/cs410-2-jar-with-dependencies.jar [DRIVER_FILE]
+    $ java -jar target/cs410-2-jar-with-dependencies.jar [DRIVER_FILE] [OUTPUT_FILE]
 
     OPTIONS:
         DRIVER_FILE - Path to driver file
+        OUTPUT_FILE - Path to PPM image output file
 

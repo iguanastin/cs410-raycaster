@@ -182,6 +182,10 @@ public class Model {
         return geoVerts.get(i - 1);
     }
 
+    public Material getMaterial() {
+        return material;
+    }
+
     @Override
     public String toString() {
         return "Model: " + "\n" +

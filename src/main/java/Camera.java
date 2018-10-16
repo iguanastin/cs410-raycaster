@@ -24,6 +24,8 @@ public class Camera {
     }
 
     public void renderPPM(File output) throws FileNotFoundException {
+        long time = System.currentTimeMillis();
+
         // Height rows, width columns, 3 ints per pixel for color
         PrintWriter writer = new PrintWriter(output);
 
@@ -45,19 +47,18 @@ public class Camera {
             for (int col = 0; col < width; col++) {
                 RealVector color = new ArrayRealVector(new double[]{0, 0, 0});
 
-                // TODO: Find raycast vector
                 double px = col / (width - 1.0) * (xmax - xmin) + xmin;
-//                final double py = row / (height - 1.0) * (ymax - ymin) + ymin; // Bottom to top
                 double py = row / (height - 1.0) * (ymin - ymax) + ymax; // Top to bottom
 
                 Vector3D pixpt = eyeV.add(near, wv).add(px, uv).add(py, vv);
                 Vector3D shoot = pixpt.subtract(eyeV).normalize();
 
-                // TODO: Fire raycast onto all meshes
+                // ------------------------------------ Raycast all meshes ---------------------------------------------
+
                 // Nearest impact
                 double nearest = Double.MAX_VALUE;
                 Model nearestModel = null;
-                int[] nearestFace = null;
+                Vector3D nearestNormal = null;
 
                 for (Model model : getScene().getModels()) {
                     for (int[] face : model.getFaces()) {
@@ -69,7 +70,7 @@ public class Camera {
                         temp = model.getVertex(face[2]);
                         final double cx = temp.getEntry(0), cy = temp.getEntry(1), cz = temp.getEntry(2);
                         final double dx = shoot.getX(), dy = shoot.getY(), dz = shoot.getZ();
-                        final double lx = eyeV.getX(), ly = eyeV.getY(), lz = eyeV.getZ();
+                        final double lx = pixpt.getX(), ly = pixpt.getY(), lz = pixpt.getZ();
 
                         double mmdet = ((az - cz) * dy - (ay - cy) * dz) * (ax - bx) -
                                 ((az - cz) * dx - (ax - cx) * dz) * (ay - by) +
@@ -88,23 +89,43 @@ public class Camera {
                         t = t / mmdet;
 
                         if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0 && t < nearest) {
-                            nearest = t;
-                            nearestFace = face;
-                            nearestModel = model;
+                            Vector3D v1 = new Vector3D(ax, ay, az);
+                            Vector3D v2 = new Vector3D(bx, by, bz);
+                            Vector3D v3 = new Vector3D(cx, cy, cz);
+
+                            Vector3D normal = v1.subtract(v2).crossProduct(v1.subtract(v3)).normalize();
+                            if (normal.dotProduct(shoot) > 0) {
+                                nearest = t;
+                                nearestModel = model;
+                                nearestNormal = normal;
+                            }
                         }
                     }
                 }
 
-                // TODO: Calculate color at nearest impact
                 if (nearest != Double.MAX_VALUE) {
-                    color = new ArrayRealVector(new double[]{0.5, 0.5, 0.5});
+                    color = ambient.ebeMultiply(nearestModel.getMaterial().getKa());
+
+                    Vector3D impact = pixpt.add(nearest, shoot);
+
+                    for (Light light : getScene().getLights()) {
+                        Vector3D lightPos = new Vector3D(light.getPos().getEntry(0), light.getPos().getEntry(1), light.getPos().getEntry(2));
+                        if (light.isInfinite()) lightPos = lightPos.add(impact);
+                        Vector3D lightToPointVector = lightPos.subtract(impact).normalize();
+                        double cosTheta = nearestNormal.negate().dotProduct(lightToPointVector);
+                        if (cosTheta > 0) {
+                            color = color.add(nearestModel.getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiplyToSelf(cosTheta));
+                        }
+                    }
                 }
 
+                //Convert and write pixel to file
                 writer.println((int)(color.getEntry(0) * 255) + " " + (int)(color.getEntry(1) * 255) + " " + (int)(color.getEntry(2) * 255));
             }
         }
 
         writer.close();
+        System.out.println("Render Time: " + (System.currentTimeMillis() - time)/1000.0 + "s");
     }
 
     public void setLook(double x, double y, double z) {
