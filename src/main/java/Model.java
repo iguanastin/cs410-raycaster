@@ -16,6 +16,7 @@ public class Model {
     private File file;
     private double theta, scale;
     private RealVector rotate, translate;
+    private Material material;
 
     private ArrayList<RealVector> geoVerts = new ArrayList<>();
     private ArrayList<RealVector> texCoords = new ArrayList<>();
@@ -40,15 +41,25 @@ public class Model {
                 String id = parts[0];
 
                 if (id.equalsIgnoreCase("v")) {
-                    parseGeometricVertex(parts);
+                    double w = 1;
+                    if (parts.length == 5) w = Double.parseDouble(parts[4]);
+                    RealVector vec = new ArrayRealVector(new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), w}, false);
+                    geoVerts.add(vec);
                 } else if (id.equalsIgnoreCase("vt")) {
-                    parseTextureCoordinate(parts);
+                    double w = 0;
+                    if (parts.length == 4) w = Double.parseDouble(parts[3]);
+                    RealVector vec = new ArrayRealVector(new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), w}, false);
+                    texCoords.add(vec);
                 } else if (id.equalsIgnoreCase("vn")) {
-                    parseVectorNormal(parts);
+                    RealVector vec = new ArrayRealVector(new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3])}, false);
+                    vecNorms.add(vec);
                 } else if (id.equalsIgnoreCase("f")) {
-                    parseFace(parts);
+                    int[] face = {Integer.parseInt(parts[1].substring(0, parts[1].indexOf('/'))), Integer.parseInt(parts[2].substring(0, parts[2].indexOf('/'))), Integer.parseInt(parts[3].substring(0, parts[3].indexOf('/')))};
+                    faces.add(face);
+                } else if (id.equalsIgnoreCase("mtllib")) {
+                    this.material = new Material(this, new File(parts[1]));
                 } else {
-                    // Unknown type
+                    System.out.println("Unable to parse unknown type in .obj: " + id);
                 }
                 //TODO: Other id parsing https://en.wikipedia.org/wiki/Wavefront_.obj_file
             }
@@ -155,30 +166,6 @@ public class Model {
         writer.close();
     }
 
-    private void parseFace(String[] parts) {
-        int[] face = {Integer.parseInt(parts[1].substring(0, parts[1].indexOf('/'))), Integer.parseInt(parts[2].substring(0, parts[2].indexOf('/'))), Integer.parseInt(parts[3].substring(0, parts[3].indexOf('/')))};
-        faces.add(face);
-    }
-
-    private void parseVectorNormal(String[] parts) {
-        RealVector vec = new ArrayRealVector(new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3])}, false);
-        vecNorms.add(vec);
-    }
-
-    private void parseTextureCoordinate(String[] parts) {
-        double w = 0;
-        if (parts.length == 4) w = Double.parseDouble(parts[3]);
-        RealVector vec = new ArrayRealVector(new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), w}, false);
-        texCoords.add(vec);
-    }
-
-    private void parseGeometricVertex(String[] parts) {
-        double w = 1;
-        if (parts.length == 5) w = Double.parseDouble(parts[4]);
-        RealVector vec = new ArrayRealVector(new double[]{Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), w}, false);
-        geoVerts.add(vec);
-    }
-
     public void setScene(Scene scene) {
         this.scene = scene;
     }
@@ -196,7 +183,8 @@ public class Model {
                 "  scale: " + scale + "\n" +
                 "  translate: " + translate + "\n" +
                 "  vertex_count: " + geoVerts.size() + "\n" +
-                "  face_count: " + faces.size();
+                "  face_count: " + faces.size() + "\n" +
+                material;
     }
 
 }
