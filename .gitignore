@@ -1,11 +1,8 @@
 # folders
-.idea
-target
-out
-driver*/
-expected
+.idea/
+target/
+out/
+data/
 
 # files
 *.iml
-*.obj
-driver*.txt

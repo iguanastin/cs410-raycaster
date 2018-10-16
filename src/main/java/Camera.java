@@ -1,6 +1,10 @@
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+
 public class Camera {
 
     private Scene scene;
@@ -16,6 +20,35 @@ public class Camera {
 
     public Camera(double x, double y, double z) {
         eye = new ArrayRealVector(new double[]{x, y, z});
+    }
+
+    public void renderPPM(File output) throws FileNotFoundException {
+        // Height rows, width columns, 3 ints per pixel for color
+        short[][][] rows = new short[height][width][3];
+        PrintWriter writer = new PrintWriter(output);
+
+        writer.println("P3");
+        writer.println(width + " " + height + " 255");
+
+        // Iterate over pixels left to right, top to bottom
+        for (int row = 0; row < rows.length; row++) {
+            for (int col = 0; col < rows[0].length; col++) {
+
+                // TODO: Find raycast vector
+
+                // TODO: Fire raycast onto all meshes
+
+                // TODO: Calculate color at nearest impact
+
+                rows[row][col][0] = 0; // Red [0-255]
+                rows[row][col][1] = 0; // Green [0-255]
+                rows[row][col][2] = 0; // Blue [0-255]
+
+                writer.println(rows[row][col][0] + " " + rows[row][col][1] + " " + rows[row][col][2]);
+            }
+        }
+
+        writer.close();
     }
 
     public void setLook(double x, double y, double z) {
