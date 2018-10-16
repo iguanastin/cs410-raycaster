@@ -174,6 +174,14 @@ public class Model {
         return scene;
     }
 
+    public ArrayList<int[]> getFaces() {
+        return faces;
+    }
+
+    public RealVector getVertex(int i) {
+        return geoVerts.get(i - 1);
+    }
+
     @Override
     public String toString() {
         return "Model: " + "\n" +

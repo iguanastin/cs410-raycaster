@@ -103,6 +103,18 @@ public class Scene {
         cam.setScene(this);
     }
 
+    public Camera getCamera() {
+        return cam;
+    }
+
+    public List<Model> getModels() {
+        return models;
+    }
+
+    public List<Light> getLights() {
+        return lights;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("Scene:\n  driver_file: ");
