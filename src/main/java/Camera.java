@@ -1,3 +1,4 @@
+import jdk.nashorn.internal.runtime.SharedPropertyMap;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.apache.commons.math3.linear.*;
 
@@ -95,7 +96,25 @@ public class Camera {
 
         for (Obj obj : getScene().getObjs()) {
             if (obj instanceof Sphere) {
+                Sphere sphere = (Sphere) obj;
 
+                Vector3D baseToCenter = sphere.getPosition().subtract(origin);
+
+                double tx = baseToCenter.getX(), ty = baseToCenter.getY(), tz = baseToCenter.getZ();
+                double ux = direction.getX(), uy = direction.getY(), uz = direction.getZ();
+                double r = sphere.getRadius();
+
+                double temp = tx*tx*ux*ux + 2*tx*ty*ux*uy + ty*ty*uy*uy + tz*tz*uz*uz + r*r - tx*tx - ty*ty - tz*tz + 2*uz*(tx*tz*ux + ty*tz*uy);
+                if (temp < 0) continue;
+                double sqrt = Math.sqrt(temp);
+
+                double s = Math.min(tx*ux + ty*uy + tz*uz - sqrt, tx*ux + ty*uy + tz*uz + sqrt);
+
+                if (s < nearest) {
+                    nearest = s;
+                    nearestObj = sphere;
+                    nearestNormal = sphere.getPosition().subtract(origin.add(nearest, direction)).normalize();
+                }
             } else if (obj instanceof Model) {
                 Model model = (Model) obj;
                 for (int[] face : model.getFaces()) {

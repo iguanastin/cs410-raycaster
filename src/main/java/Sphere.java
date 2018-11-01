@@ -23,4 +23,8 @@ public class Sphere extends Obj {
         return position;
     }
 
+    public double getRadius() {
+        return radius;
+    }
+
 }
