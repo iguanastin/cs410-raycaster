@@ -6,11 +6,15 @@ public class Hit {
     private final Obj obj;
     private final Vector3D normal;
     private final Vector3D impact;
+    private final Vector3D origin;
+    private final Vector3D direction;
 
 
-    public Hit(Obj obj, Vector3D normal, Vector3D impact, double distance) {
+    public Hit(Obj obj, Vector3D origin, Vector3D direction, Vector3D normal, Vector3D impact, double distance) {
         this.distance = distance;
         this.obj = obj;
+        this.origin = origin;
+        this.direction = direction;
         this.normal = normal;
         this.impact = impact;
     }
@@ -29,6 +33,14 @@ public class Hit {
 
     public Vector3D getImpact() {
         return impact;
+    }
+
+    public Vector3D getDirection() {
+        return direction;
+    }
+
+    public Vector3D getOrigin() {
+        return origin;
     }
 
 }

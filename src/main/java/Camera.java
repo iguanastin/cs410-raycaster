@@ -82,9 +82,19 @@ public class Camera {
 
             double cosTheta = hit.getNormal().dotProduct(lightDirection);
             if (cosTheta > 0.000001) {
+                //TODO: This is totally borked, I think my raycasts aren't being computed right
 //                Hit hit2 = raycast(hit.getImpact(), lightDirection);
 //                if (hit2 == null) {
-                    color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
+                color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
+
+                if (hit.getObj().getMaterial().getKs() != null) {
+                    Vector3D toC = hit.getDirection().subtract(lightDirection.negate()).normalize(); //TODO: Something's wrong here and I have no idea what
+                    Vector3D spR = hit.getNormal().scalarMultiply(2 * cosTheta).subtract(lightDirection);
+                    double CdR = toC.dotProduct(spR);
+                    if (CdR > 0.000001) {
+                        color = color.add(hit.getObj().getMaterial().getKs().ebeMultiply(light.getColor()).mapMultiply(Math.pow(CdR, 16)));
+                    }
+                }
 //                }
             }
         }
@@ -108,7 +118,7 @@ public class Camera {
                 double ux = direction.getX(), uy = direction.getY(), uz = direction.getZ();
                 double r = sphere.getRadius();
 
-                double temp = tx * tx * ux * ux + 2 * tx * ty * ux * uy + ty * ty * uy * uy + tz * tz * uz * uz + r * r - tx * tx - ty * ty - tz * tz + 2 * uz * (tx * tz * ux + ty * tz * uy);
+                double temp = (tx * tx * ux * ux) + (2 * tx * ty * ux * uy) + (ty * ty * uy * uy) + (tz * tz * uz * uz) + (r * r) - (tx * tx) - (ty * ty) - (tz * tz) + (2 * uz * (tx * tz * ux + ty * tz * uy));
                 if (temp < 0) continue;
                 double sqrt = Math.sqrt(temp);
 
@@ -175,7 +185,7 @@ public class Camera {
         }
 
         if (nearestObj != null) {
-            return new Hit(nearestObj, nearestNormal, origin.add(nearest, direction), nearest);
+            return new Hit(nearestObj, origin, direction, nearestNormal, origin.add(nearest, direction), nearest);
         } else {
             return null;
         }

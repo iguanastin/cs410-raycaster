@@ -6,7 +6,7 @@
 
     <groupId>austinbt</groupId>
     <artifactId>cs410</artifactId>
-    <version>2</version>
+    <version>3</version>
 
     <build>
         <plugins>
