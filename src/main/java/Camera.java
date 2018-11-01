@@ -82,7 +82,10 @@ public class Camera {
 
             double cosTheta = hit.getNormal().dotProduct(lightDirection);
             if (cosTheta > 0.000001) {
-                color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
+//                Hit hit2 = raycast(hit.getImpact(), lightDirection);
+//                if (hit2 == null) {
+                    color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
+//                }
             }
         }
 
@@ -90,6 +93,7 @@ public class Camera {
     }
 
     private Hit raycast(Vector3D origin, Vector3D direction) {
+        direction = direction.normalize();
         double nearest = Double.MAX_VALUE;
         Obj nearestObj = null;
         Vector3D nearestNormal = null;
@@ -104,11 +108,11 @@ public class Camera {
                 double ux = direction.getX(), uy = direction.getY(), uz = direction.getZ();
                 double r = sphere.getRadius();
 
-                double temp = tx*tx*ux*ux + 2*tx*ty*ux*uy + ty*ty*uy*uy + tz*tz*uz*uz + r*r - tx*tx - ty*ty - tz*tz + 2*uz*(tx*tz*ux + ty*tz*uy);
+                double temp = tx * tx * ux * ux + 2 * tx * ty * ux * uy + ty * ty * uy * uy + tz * tz * uz * uz + r * r - tx * tx - ty * ty - tz * tz + 2 * uz * (tx * tz * ux + ty * tz * uy);
                 if (temp < 0) continue;
                 double sqrt = Math.sqrt(temp);
 
-                double s = Math.min(tx*ux + ty*uy + tz*uz - sqrt, tx*ux + ty*uy + tz*uz + sqrt);
+                double s = Math.min(tx * ux + ty * uy + tz * uz - sqrt, tx * ux + ty * uy + tz * uz + sqrt);
 
                 if (s < nearest) {
                     nearest = s;
@@ -147,7 +151,7 @@ public class Camera {
                     t = t / mmdet;
 
                     //Test for collision
-                    if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0 && t < nearest && t > 0.000001) {
+                    if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0.000001 && t < nearest) {
                         //Construct 3 vertices of the face
                         Vector3D v1 = new Vector3D(ax, ay, az);
                         Vector3D v2 = new Vector3D(bx, by, bz);
