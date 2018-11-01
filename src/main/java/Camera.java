@@ -55,7 +55,6 @@ public class Camera {
 
                 // ------------------------------------ Raycast all meshes ---------------------------------------------
 
-                // Nearest impact
                 double nearest = Double.MAX_VALUE;
                 Model nearestModel = null;
                 Vector3D nearestNormal = null;
@@ -63,6 +62,7 @@ public class Camera {
                 for (Model model : getScene().getModels()) {
                     for (int[] face : model.getFaces()) {
 
+                        // Initialize a, b, c, d, and l. (x,y,z)
                         RealVector temp = model.getVertex(face[0]);
                         final double ax = temp.getEntry(0), ay = temp.getEntry(1), az = temp.getEntry(2);
                         temp = model.getVertex(face[1]);
@@ -72,6 +72,7 @@ public class Camera {
                         final double dx = shoot.getX(), dy = shoot.getY(), dz = shoot.getZ();
                         final double lx = pixpt.getX(), ly = pixpt.getY(), lz = pixpt.getZ();
 
+                        //Compute mmdet, beta, gamma, and t
                         double mmdet = ((az - cz) * dy - (ay - cy) * dz) * (ax - bx) -
                                 ((az - cz) * dx - (ax - cx) * dz) * (ay - by) +
                                 ((ay - cy) * dx - (ax - cx) * dy) * (az - bz);
@@ -88,22 +89,30 @@ public class Camera {
                                 ((ax - lx) * (ay - cy) - (ax - cx) * (ay - ly)) * (az - bz);
                         t = t / mmdet;
 
+                        //Test for collision
                         if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0 && t < nearest) {
+                            //Construct 3 vertices of the face
                             Vector3D v1 = new Vector3D(ax, ay, az);
                             Vector3D v2 = new Vector3D(bx, by, bz);
                             Vector3D v3 = new Vector3D(cx, cy, cz);
 
-                            Vector3D normal = v1.subtract(v2).crossProduct(v1.subtract(v3)).normalize();
-                            if (normal.dotProduct(shoot) > 0) {
-                                nearest = t;
-                                nearestModel = model;
-                                nearestNormal = normal;
+                            //Compute normal
+                            Vector3D normal = v1.subtract(v2).crossProduct(v2.subtract(v3)).normalize();
+
+                            //Invert normal if it's not facing the camera
+                            if (normal.dotProduct(shoot) < -0.000001) {
+                                normal = normal.negate();
                             }
+
+                            //Set current nearest impact
+                            nearest = t;
+                            nearestModel = model;
+                            nearestNormal = normal;
                         }
                     }
                 }
 
-                if (nearest != Double.MAX_VALUE) {
+                if (nearestModel != null) {
                     color = ambient.ebeMultiply(nearestModel.getMaterial().getKa());
 
                     Vector3D impact = pixpt.add(nearest, shoot);
@@ -111,21 +120,24 @@ public class Camera {
                     for (Light light : getScene().getLights()) {
                         Vector3D lightPos = new Vector3D(light.getPos().getEntry(0), light.getPos().getEntry(1), light.getPos().getEntry(2));
                         if (light.isInfinite()) lightPos = lightPos.add(impact);
-                        Vector3D lightToPointVector = lightPos.subtract(impact).normalize();
-                        double cosTheta = nearestNormal.negate().dotProduct(lightToPointVector);
-                        if (cosTheta > 0) {
-                            color = color.add(nearestModel.getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiplyToSelf(cosTheta));
+
+                        //Get vector from light to impact
+                        Vector3D lightToPointVector = impact.subtract(lightPos).normalize();
+
+                        double cosTheta = nearestNormal.dotProduct(lightToPointVector);
+                        if (cosTheta > 0.000001) {
+                            color = color.add(nearestModel.getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
                         }
                     }
                 }
 
                 //Convert and write pixel to file
-                writer.println((int)(color.getEntry(0) * 255) + " " + (int)(color.getEntry(1) * 255) + " " + (int)(color.getEntry(2) * 255));
+                writer.println((int) (color.getEntry(0) * 255) + " " + (int) (color.getEntry(1) * 255) + " " + (int) (color.getEntry(2) * 255));
             }
         }
 
         writer.close();
-        System.out.println("Render Time: " + (System.currentTimeMillis() - time)/1000.0 + "s");
+        System.out.println("Render Time: " + (System.currentTimeMillis() - time) / 1000.0 + "s");
     }
 
     public void setLook(double x, double y, double z) {
