@@ -8,7 +8,7 @@ import java.util.Scanner;
 public class Scene {
 
     private Camera cam;
-    private List<Model> models = new ArrayList<>();
+    private List<Obj> objs = new ArrayList<>();
     private List<Light> lights = new ArrayList<>();
 
     private File driver;
@@ -63,7 +63,9 @@ public class Scene {
                         model.save(output);
                     }
 
-                    addModel(model);
+                    addObj(model);
+                } else if (type.equalsIgnoreCase("sphere")) {
+                    addObj(new Sphere(parts));
                 } else if (type.equalsIgnoreCase("light")) {
                     addLight(new Light(parts));
                 } else if (type.equalsIgnoreCase("eye")) {
@@ -88,9 +90,9 @@ public class Scene {
         scan.close();
     }
 
-    private void addModel(Model model) {
-        models.add(model);
-        model.setScene(this);
+    private void addObj(Obj obj) {
+        objs.add(obj);
+        obj.setScene(this);
     }
 
     private void addLight(Light light) {
@@ -107,8 +109,8 @@ public class Scene {
         return cam;
     }
 
-    public List<Model> getModels() {
-        return models;
+    public List<Obj> getObjs() {
+        return objs;
     }
 
     public List<Light> getLights() {
@@ -126,8 +128,8 @@ public class Scene {
             sb.append(light);
             sb.append('\n');
         });
-        models.forEach(model -> {
-            sb.append(model);
+        objs.forEach(obj -> {
+            sb.append(obj);
             sb.append('\n');
         });
 

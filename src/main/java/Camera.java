@@ -4,7 +4,6 @@ import org.apache.commons.math3.linear.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.Arrays;
 
 public class Camera {
 
@@ -45,8 +44,6 @@ public class Camera {
         // Iterate over pixels left to right, top to bottom
         for (int row = 0; row < height; row++) {
             for (int col = 0; col < width; col++) {
-                RealVector color = new ArrayRealVector(new double[]{0, 0, 0});
-
                 double px = col / (width - 1.0) * (xmax - xmin) + xmin;
                 double py = row / (height - 1.0) * (ymin - ymax) + ymax; // Top to bottom
 
@@ -55,80 +52,12 @@ public class Camera {
 
                 // ------------------------------------ Raycast all meshes ---------------------------------------------
 
-                double nearest = Double.MAX_VALUE;
-                Model nearestModel = null;
-                Vector3D nearestNormal = null;
+                Hit hit = raycast(pixpt, shoot);
 
-                for (Model model : getScene().getModels()) {
-                    for (int[] face : model.getFaces()) {
+                RealVector color = new ArrayRealVector(new double[]{0, 0, 0});
 
-                        // Initialize a, b, c, d, and l. (x,y,z)
-                        RealVector temp = model.getVertex(face[0]);
-                        final double ax = temp.getEntry(0), ay = temp.getEntry(1), az = temp.getEntry(2);
-                        temp = model.getVertex(face[1]);
-                        final double bx = temp.getEntry(0), by = temp.getEntry(1), bz = temp.getEntry(2);
-                        temp = model.getVertex(face[2]);
-                        final double cx = temp.getEntry(0), cy = temp.getEntry(1), cz = temp.getEntry(2);
-                        final double dx = shoot.getX(), dy = shoot.getY(), dz = shoot.getZ();
-                        final double lx = pixpt.getX(), ly = pixpt.getY(), lz = pixpt.getZ();
-
-                        //Compute mmdet, beta, gamma, and t
-                        double mmdet = ((az - cz) * dy - (ay - cy) * dz) * (ax - bx) -
-                                ((az - cz) * dx - (ax - cx) * dz) * (ay - by) +
-                                ((ay - cy) * dx - (ax - cx) * dy) * (az - bz);
-                        double beta = ((az - cz) * dy - (ay - cy) * dz) * (ax - lx) -
-                                ((az - cz) * dx - (ax - cx) * dz) * (ay - ly) +
-                                ((ay - cy) * dx - (ax - cx) * dy) * (az - lz);
-                        beta = beta / mmdet;
-                        double gamma = ((az - lz) * dy - (ay - ly) * dz) * (ax - bx) -
-                                ((az - lz) * dx - (ax - lx) * dz) * (ay - by) +
-                                ((ay - ly) * dx - (ax - lx) * dy) * (az - bz);
-                        gamma = gamma / mmdet;
-                        double t = ((ay - ly) * (az - cz) - (ay - cy) * (az - lz)) * (ax - bx) -
-                                ((ax - lx) * (az - cz) - (ax - cx) * (az - lz)) * (ay - by) -
-                                ((ax - lx) * (ay - cy) - (ax - cx) * (ay - ly)) * (az - bz);
-                        t = t / mmdet;
-
-                        //Test for collision
-                        if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0 && t < nearest) {
-                            //Construct 3 vertices of the face
-                            Vector3D v1 = new Vector3D(ax, ay, az);
-                            Vector3D v2 = new Vector3D(bx, by, bz);
-                            Vector3D v3 = new Vector3D(cx, cy, cz);
-
-                            //Compute normal
-                            Vector3D normal = v1.subtract(v2).crossProduct(v2.subtract(v3)).normalize();
-
-                            //Invert normal if it's not facing the camera
-                            if (normal.dotProduct(shoot) < -0.000001) {
-                                normal = normal.negate();
-                            }
-
-                            //Set current nearest impact
-                            nearest = t;
-                            nearestModel = model;
-                            nearestNormal = normal;
-                        }
-                    }
-                }
-
-                if (nearestModel != null) {
-                    color = ambient.ebeMultiply(nearestModel.getMaterial().getKa());
-
-                    Vector3D impact = pixpt.add(nearest, shoot);
-
-                    for (Light light : getScene().getLights()) {
-                        Vector3D lightPos = new Vector3D(light.getPos().getEntry(0), light.getPos().getEntry(1), light.getPos().getEntry(2));
-                        if (light.isInfinite()) lightPos = lightPos.add(impact);
-
-                        //Get vector from light to impact
-                        Vector3D lightToPointVector = impact.subtract(lightPos).normalize();
-
-                        double cosTheta = nearestNormal.dotProduct(lightToPointVector);
-                        if (cosTheta > 0.000001) {
-                            color = color.add(nearestModel.getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
-                        }
-                    }
+                if (hit != null) {
+                    color = computeColor(hit);
                 }
 
                 //Convert and write pixel to file
@@ -138,6 +67,95 @@ public class Camera {
 
         writer.close();
         System.out.println("Render Time: " + (System.currentTimeMillis() - time) / 1000.0 + "s");
+    }
+
+    private RealVector computeColor(Hit hit) {
+        RealVector color = ambient.ebeMultiply(hit.getObj().getMaterial().getKa());
+
+        for (Light light : getScene().getLights()) {
+            Vector3D lightPos = new Vector3D(light.getPos().getEntry(0), light.getPos().getEntry(1), light.getPos().getEntry(2));
+            if (light.isInfinite()) lightPos = lightPos.add(hit.getImpact());
+
+            //Get vector from light to impact
+            Vector3D lightDirection = hit.getImpact().subtract(lightPos).normalize();
+
+            double cosTheta = hit.getNormal().dotProduct(lightDirection);
+            if (cosTheta > 0.000001) {
+                color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
+            }
+        }
+
+        return color;
+    }
+
+    private Hit raycast(Vector3D origin, Vector3D direction) {
+        double nearest = Double.MAX_VALUE;
+        Obj nearestObj = null;
+        Vector3D nearestNormal = null;
+
+        for (Obj obj : getScene().getObjs()) {
+            if (obj instanceof Sphere) {
+
+            } else if (obj instanceof Model) {
+                Model model = (Model) obj;
+                for (int[] face : model.getFaces()) {
+
+                    // Initialize a, b, c, d, and l. (x,y,z)
+                    RealVector temp = model.getVertex(face[0]);
+                    final double ax = temp.getEntry(0), ay = temp.getEntry(1), az = temp.getEntry(2);
+                    temp = model.getVertex(face[1]);
+                    final double bx = temp.getEntry(0), by = temp.getEntry(1), bz = temp.getEntry(2);
+                    temp = model.getVertex(face[2]);
+                    final double cx = temp.getEntry(0), cy = temp.getEntry(1), cz = temp.getEntry(2);
+                    final double dx = direction.getX(), dy = direction.getY(), dz = direction.getZ();
+                    final double lx = origin.getX(), ly = origin.getY(), lz = origin.getZ();
+
+                    //Compute mmdet, beta, gamma, and t
+                    double mmdet = ((az - cz) * dy - (ay - cy) * dz) * (ax - bx) -
+                            ((az - cz) * dx - (ax - cx) * dz) * (ay - by) +
+                            ((ay - cy) * dx - (ax - cx) * dy) * (az - bz);
+                    double beta = ((az - cz) * dy - (ay - cy) * dz) * (ax - lx) -
+                            ((az - cz) * dx - (ax - cx) * dz) * (ay - ly) +
+                            ((ay - cy) * dx - (ax - cx) * dy) * (az - lz);
+                    beta = beta / mmdet;
+                    double gamma = ((az - lz) * dy - (ay - ly) * dz) * (ax - bx) -
+                            ((az - lz) * dx - (ax - lx) * dz) * (ay - by) +
+                            ((ay - ly) * dx - (ax - lx) * dy) * (az - bz);
+                    gamma = gamma / mmdet;
+                    double t = ((ay - ly) * (az - cz) - (ay - cy) * (az - lz)) * (ax - bx) -
+                            ((ax - lx) * (az - cz) - (ax - cx) * (az - lz)) * (ay - by) -
+                            ((ax - lx) * (ay - cy) - (ax - cx) * (ay - ly)) * (az - bz);
+                    t = t / mmdet;
+
+                    //Test for collision
+                    if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0 && t < nearest && t > 0.000001) {
+                        //Construct 3 vertices of the face
+                        Vector3D v1 = new Vector3D(ax, ay, az);
+                        Vector3D v2 = new Vector3D(bx, by, bz);
+                        Vector3D v3 = new Vector3D(cx, cy, cz);
+
+                        //Compute normal
+                        Vector3D normal = v1.subtract(v2).crossProduct(v2.subtract(v3)).normalize();
+
+                        //Invert normal if it's not facing the source
+                        if (normal.dotProduct(direction) < -0.000001) {
+                            normal = normal.negate();
+                        }
+
+                        //Set current nearest impact
+                        nearest = t;
+                        nearestObj = model;
+                        nearestNormal = normal;
+                    }
+                }
+            }
+        }
+
+        if (nearestObj != null) {
+            return new Hit(nearestObj, nearestNormal, origin.add(nearest, direction), nearest);
+        } else {
+            return null;
+        }
     }
 
     public void setLook(double x, double y, double z) {

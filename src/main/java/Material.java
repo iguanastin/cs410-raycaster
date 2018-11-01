@@ -7,13 +7,21 @@ import java.util.Scanner;
 
 public class Material {
 
-    private Model model;
+    private int phong = 16;
 
     private String name;
-    private RealVector ka, kd;
+    private RealVector ka, kd, ks, kr;
 
 
-    public Material(Model model, File file) throws FileNotFoundException {
+    public Material(String name, RealVector ka, RealVector kd, RealVector ks, RealVector kr) {
+        this.name = name;
+        this.ka = ka;
+        this.kd = kd;
+        this.ks = ks;
+        this.kr = kr;
+    }
+
+    public Material(File file) throws FileNotFoundException {
         Scanner scan = new Scanner(file);
 
         // TODO: Multiple materials in one material file?
@@ -50,8 +58,16 @@ public class Material {
         return kd;
     }
 
-    public Model getModel() {
-        return model;
+    public RealVector getKs() {
+        return ks;
+    }
+
+    public RealVector getKr() {
+        return kr;
+    }
+
+    public int getPhong() {
+        return phong;
     }
 
     @Override

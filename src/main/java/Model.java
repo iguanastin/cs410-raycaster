@@ -9,9 +9,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-public class Model {
-
-    private Scene scene;
+public class Model extends Obj {
 
     private File file;
     private double theta, scale;
@@ -57,7 +55,7 @@ public class Model {
                     int[] face = {Integer.parseInt(parts[1].substring(0, parts[1].indexOf('/'))), Integer.parseInt(parts[2].substring(0, parts[2].indexOf('/'))), Integer.parseInt(parts[3].substring(0, parts[3].indexOf('/')))};
                     faces.add(face);
                 } else if (id.equalsIgnoreCase("mtllib")) {
-                    this.material = new Material(this, new File(parts[1]));
+                    this.material = new Material(new File(parts[1]));
                 } else {
                     System.out.println("Unable to parse unknown type in .obj: " + id);
                 }
@@ -164,14 +162,6 @@ public class Model {
         //TODO: Write others
 
         writer.close();
-    }
-
-    public void setScene(Scene scene) {
-        this.scene = scene;
-    }
-
-    public Scene getScene() {
-        return scene;
     }
 
     public ArrayList<int[]> getFaces() {
