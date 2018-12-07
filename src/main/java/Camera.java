@@ -86,7 +86,7 @@ public class Camera {
             double cosTheta = hit.getNormal().dotProduct(lightDirection);
             if (cosTheta > 0.000001) {
                 Hit hit2 = raycast(hit.getImpact(), lightDirection.negate());
-                if (hit2 == null || hit.getObj() instanceof Sphere) {
+                if (hit2 == null) {
                     color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
 
                     if (hit.getObj().getMaterial().getKs() != null) {
@@ -122,7 +122,7 @@ public class Camera {
                 if (disc < 0) continue;
                 final double t = v - Math.sqrt(disc);
 
-                if (t < nearest) {
+                if (t > 0.0001 && t < nearest) {
                     nearest = t;
                     nearestObj = sphere;
                     nearestNormal = sphere.getPosition().subtract(origin.add(nearest, direction)).normalize();
@@ -151,7 +151,7 @@ public class Camera {
                     t /= mmdet;
 
                     //Test for collision
-                    if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0.000001 && t < nearest) {
+                    if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0.0001 && t < nearest) {
                         //Construct 3 vertices of the face
                         Vector3D v1 = new Vector3D(ax, ay, az);
                         Vector3D v2 = new Vector3D(bx, by, bz);
@@ -161,7 +161,7 @@ public class Camera {
                         Vector3D normal = v1.subtract(v2).crossProduct(v1.subtract(v3)).normalize();
 
                         //Invert normal if it's not facing the source
-                        if (normal.dotProduct(direction) < -0.000001) {
+                        if (normal.dotProduct(direction) < -0.0001) {
                             normal = normal.negate();
                         }
 
