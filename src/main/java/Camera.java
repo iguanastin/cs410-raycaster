@@ -86,7 +86,7 @@ public class Camera {
             double cosTheta = hit.getNormal().dotProduct(lightDirection);
             if (cosTheta > 0.000001) {
                 Hit hit2 = raycast(hit.getImpact(), lightDirection.negate());
-                if (hit2 == null) {
+                if (hit2 == null || hit.getObj() instanceof Sphere) {
                     color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
 
                     if (hit.getObj().getMaterial().getKs() != null) {
@@ -119,13 +119,13 @@ public class Camera {
                 final double csq = Tv.dotProduct(Tv);
                 final double disc = sphere.getRadius() * sphere.getRadius() - (csq - v * v);
 
-                if (disc <= 0) continue;
+                if (disc < 0) continue;
                 final double t = v - Math.sqrt(disc);
 
                 if (t < nearest) {
                     nearest = t;
                     nearestObj = sphere;
-                    nearestNormal = origin.add(nearest, direction).subtract(sphere.getPosition()).normalize();
+                    nearestNormal = sphere.getPosition().subtract(origin.add(nearest, direction)).normalize();
                 }
             } else if (obj instanceof Model) {
                 Model model = (Model) obj;
