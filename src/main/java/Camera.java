@@ -30,9 +30,6 @@ public class Camera {
 
         // Height rows, width columns, 3 ints per pixel for color
         PrintWriter writer = new PrintWriter(output);
-        PrintWriter debug = new PrintWriter(new File("debug.ppm"));
-        debug.println("P3");
-        debug.println(width + " " + height + " 255");
 
         writer.println("P3");
         writer.println(width + " " + height + " 255");
@@ -69,20 +66,10 @@ public class Camera {
 
                 //Convert and write pixel to file
                 writer.println((int) (color.getEntry(0) * 255) + " " + (int) (color.getEntry(1) * 255) + " " + (int) (color.getEntry(2) * 255));
-                final double range = 2;
-                if (hit != null) {
-                    int val = (int) (hit.getDistance() * range);
-                    if (val > 255) val = 255;
-                    debug.println(val + " " + val + " " + val);
-//                    debug.println("255 255 255");
-                } else {
-                    debug.println("0 0 0");
-                }
             }
         }
 
         writer.close();
-        debug.close();
         System.out.println("Render Time: " + (System.currentTimeMillis() - time) / 1000.0 + "s");
     }
 
@@ -98,20 +85,19 @@ public class Camera {
 
             double cosTheta = hit.getNormal().dotProduct(lightDirection);
             if (cosTheta > 0.000001) {
-                //TODO: This is totally borked, I think my raycasts aren't being computed right
-//                Hit hit2 = raycast(hit.getImpact(), lightDirection);
-//                if (hit2 == null) {
-                color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
+                Hit hit2 = raycast(hit.getImpact(), lightDirection.negate());
+                if (hit2 == null) {
+                    color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
 
-                if (hit.getObj().getMaterial().getKs() != null) {
-                    Vector3D toC = hit.getDirection().subtract(lightDirection.negate()).normalize(); //TODO: Something's wrong here and I have no idea what
-                    Vector3D spR = hit.getNormal().scalarMultiply(2 * cosTheta).subtract(lightDirection);
-                    double CdR = toC.dotProduct(spR);
-                    if (CdR > 0.000001) {
-                        color = color.add(hit.getObj().getMaterial().getKs().ebeMultiply(light.getColor()).mapMultiply(Math.pow(CdR, 16)));
+                    if (hit.getObj().getMaterial().getKs() != null) {
+                        Vector3D toC = hit.getDirection().subtract(lightDirection).normalize();
+                        Vector3D spR = hit.getNormal().scalarMultiply(2 * cosTheta).subtract(lightDirection);
+                        double CdR = toC.dotProduct(spR);
+                        if (CdR > 0.000001) {
+                            color = color.add(hit.getObj().getMaterial().getKs().ebeMultiply(light.getColor()).mapMultiply(Math.pow(CdR, 16)));
+                        }
                     }
                 }
-//                }
             }
         }
 
@@ -128,22 +114,18 @@ public class Camera {
             if (obj instanceof Sphere) {
                 Sphere sphere = (Sphere) obj;
 
-                Vector3D baseToCenter = sphere.getPosition().subtract(origin);
+                final Vector3D Tv = sphere.getPosition().subtract(origin);
+                final double v = Tv.dotProduct(direction);
+                final double csq = Tv.dotProduct(Tv);
+                final double disc = sphere.getRadius() * sphere.getRadius() - (csq - v * v);
 
-                double tx = baseToCenter.getX(), ty = baseToCenter.getY(), tz = baseToCenter.getZ();
-                double ux = direction.getX(), uy = direction.getY(), uz = direction.getZ();
-                double r = sphere.getRadius();
+                if (disc <= 0) continue;
+                final double t = v - Math.sqrt(disc);
 
-                double temp = (tx * tx * ux * ux) + (2 * tx * ty * ux * uy) + (ty * ty * uy * uy) + (tz * tz * uz * uz) + (r * r) - (tx * tx) - (ty * ty) - (tz * tz) + (2 * uz * (tx * tz * ux + ty * tz * uy));
-                if (temp < 0) continue;
-                double sqrt = Math.sqrt(temp);
-
-                double s = Math.min(tx * ux + ty * uy + tz * uz - sqrt, tx * ux + ty * uy + tz * uz + sqrt);
-
-                if (s < nearest) {
-                    nearest = s;
+                if (t < nearest) {
+                    nearest = t;
                     nearestObj = sphere;
-                    nearestNormal = sphere.getPosition().subtract(origin.add(nearest, direction)).normalize();
+                    nearestNormal = origin.add(nearest, direction).subtract(sphere.getPosition()).normalize();
                 }
             } else if (obj instanceof Model) {
                 Model model = (Model) obj;
