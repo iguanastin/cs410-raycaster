@@ -90,8 +90,8 @@ public class Camera {
                     color = color.add(hit.getObj().getMaterial().getKd().ebeMultiply(light.getColor()).mapMultiply(cosTheta));
 
                     if (hit.getObj().getMaterial().getKs() != null) {
-                        Vector3D toC = hit.getDirection().subtract(lightDirection).normalize();
-                        Vector3D spR = hit.getNormal().scalarMultiply(2 * cosTheta).subtract(lightDirection);
+                        Vector3D toC = hit.getOrigin().subtract(hit.getImpact()).normalize();
+                        Vector3D spR = lightDirection.subtract(hit.getNormal().scalarMultiply(2 * cosTheta));
                         double CdR = toC.dotProduct(spR);
                         if (CdR > 0.000001) {
                             color = color.add(hit.getObj().getMaterial().getKs().ebeMultiply(light.getColor()).mapMultiply(Math.pow(CdR, 16)));
