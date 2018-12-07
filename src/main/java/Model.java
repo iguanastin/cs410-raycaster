@@ -15,6 +15,7 @@ public class Model extends Obj {
     private double theta, scale;
     private RealVector rotate, translate;
     private Material material;
+    private boolean smooth;
 
     private ArrayList<RealVector> geoVerts = new ArrayList<>();
     private ArrayList<RealVector> texCoords = new ArrayList<>();
@@ -22,12 +23,13 @@ public class Model extends Obj {
     private ArrayList<int[]> faces = new ArrayList<>();
 
 
-    public Model(double wx, double wy, double wz, double theta, double scale, double tx, double ty, double tz, File file) throws FileNotFoundException {
+    public Model(double wx, double wy, double wz, double theta, double scale, double tx, double ty, double tz, boolean smooth, File file) throws FileNotFoundException {
         this.file = file;
         this.rotate = new ArrayRealVector(new double[]{wx, wy, wz});
         this.theta = theta;
         this.scale = scale;
         this.translate = new ArrayRealVector(new double[]{tx, ty, tz});
+        this.smooth = smooth;
 
         // Load object data from file
         Scanner scan = new Scanner(file);
@@ -70,7 +72,7 @@ public class Model extends Obj {
     }
 
     public Model(String[] parts) throws FileNotFoundException {
-        this(Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), Double.parseDouble(parts[4]), Double.parseDouble(parts[5]), Double.parseDouble(parts[6]), Double.parseDouble(parts[7]), Double.parseDouble(parts[8]), new File(parts[9]));
+        this(Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]), Double.parseDouble(parts[4]), Double.parseDouble(parts[5]), Double.parseDouble(parts[6]), Double.parseDouble(parts[7]), Double.parseDouble(parts[8]), parts[9].equalsIgnoreCase("smooth"), new File(parts[10]));
     }
 
     public void scale(double factor) {

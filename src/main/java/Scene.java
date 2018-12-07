@@ -82,6 +82,8 @@ public class Scene {
                     cam.setResolution(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
                 } else if (type.equalsIgnoreCase("ambient")) {
                     cam.setAmbient(Double.parseDouble(parts[1]), Double.parseDouble(parts[2]), Double.parseDouble(parts[3]));
+                } else if (type.equalsIgnoreCase("recursionlevel")) {
+                    cam.setRecursionLevel(Integer.parseInt(parts[1]));
                 } else {
                     System.out.println("Skipping line, unknown type: " + type);
                 }

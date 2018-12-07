@@ -1,10 +1,11 @@
-import jdk.nashorn.internal.runtime.SharedPropertyMap;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.apache.commons.math3.linear.*;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealVector;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 
 public class Camera {
 
@@ -16,6 +17,7 @@ public class Camera {
     private double d;
     private double xmin, ymin, xmax, ymax;
     private int width, height;
+    private int recursionLevel;
     private RealVector ambient;
 
 
@@ -28,6 +30,9 @@ public class Camera {
 
         // Height rows, width columns, 3 ints per pixel for color
         PrintWriter writer = new PrintWriter(output);
+        PrintWriter debug = new PrintWriter(new File("debug.ppm"));
+        debug.println("P3");
+        debug.println(width + " " + height + " 255");
 
         writer.println("P3");
         writer.println(width + " " + height + " 255");
@@ -36,7 +41,8 @@ public class Camera {
         final Vector3D eyeV = new Vector3D(eye.getEntry(0), eye.getEntry(1), eye.getEntry(2));
         final Vector3D lookV = new Vector3D(look.getEntry(0), look.getEntry(1), look.getEntry(2));
         final Vector3D upV = new Vector3D(up.getEntry(0), up.getEntry(1), up.getEntry(2));
-        final double near = -d;
+        double near = -d;
+        if (near > 0) near = -near;
 
         Vector3D wv = eyeV.subtract(lookV).normalize();
         Vector3D uv = upV.crossProduct(wv).normalize();
@@ -63,10 +69,20 @@ public class Camera {
 
                 //Convert and write pixel to file
                 writer.println((int) (color.getEntry(0) * 255) + " " + (int) (color.getEntry(1) * 255) + " " + (int) (color.getEntry(2) * 255));
+                final double range = 2;
+                if (hit != null) {
+                    int val = (int) (hit.getDistance() * range);
+                    if (val > 255) val = 255;
+                    debug.println(val + " " + val + " " + val);
+//                    debug.println("255 255 255");
+                } else {
+                    debug.println("0 0 0");
+                }
             }
         }
 
         writer.close();
+        debug.close();
         System.out.println("Render Time: " + (System.currentTimeMillis() - time) / 1000.0 + "s");
     }
 
@@ -131,34 +147,26 @@ public class Camera {
                 }
             } else if (obj instanceof Model) {
                 Model model = (Model) obj;
+                int i = 0;
                 for (int[] face : model.getFaces()) {
-
                     // Initialize a, b, c, d, and l. (x,y,z)
-                    RealVector temp = model.getVertex(face[0]);
+                    RealVector temp = model.getVertex(face[2]);
                     final double ax = temp.getEntry(0), ay = temp.getEntry(1), az = temp.getEntry(2);
                     temp = model.getVertex(face[1]);
                     final double bx = temp.getEntry(0), by = temp.getEntry(1), bz = temp.getEntry(2);
-                    temp = model.getVertex(face[2]);
+                    temp = model.getVertex(face[0]);
                     final double cx = temp.getEntry(0), cy = temp.getEntry(1), cz = temp.getEntry(2);
                     final double dx = direction.getX(), dy = direction.getY(), dz = direction.getZ();
                     final double lx = origin.getX(), ly = origin.getY(), lz = origin.getZ();
 
                     //Compute mmdet, beta, gamma, and t
-                    double mmdet = ((az - cz) * dy - (ay - cy) * dz) * (ax - bx) -
-                            ((az - cz) * dx - (ax - cx) * dz) * (ay - by) +
-                            ((ay - cy) * dx - (ax - cx) * dy) * (az - bz);
-                    double beta = ((az - cz) * dy - (ay - cy) * dz) * (ax - lx) -
-                            ((az - cz) * dx - (ax - cx) * dz) * (ay - ly) +
-                            ((ay - cy) * dx - (ax - cx) * dy) * (az - lz);
-                    beta = beta / mmdet;
-                    double gamma = ((az - lz) * dy - (ay - ly) * dz) * (ax - bx) -
-                            ((az - lz) * dx - (ax - lx) * dz) * (ay - by) +
-                            ((ay - ly) * dx - (ax - lx) * dy) * (az - bz);
-                    gamma = gamma / mmdet;
-                    double t = ((ay - ly) * (az - cz) - (ay - cy) * (az - lz)) * (ax - bx) -
-                            ((ax - lx) * (az - cz) - (ax - cx) * (az - lz)) * (ay - by) -
-                            ((ax - lx) * (ay - cy) - (ax - cx) * (ay - ly)) * (az - bz);
-                    t = t / mmdet;
+                    double mmdet = ((az - cz) * dy - (ay - cy) * dz) * (ax - bx) - ((az - cz) * dx - (ax - cx) * dz) * (ay - by) + ((ay - cy) * dx - (ax - cx) * dy) * (az - bz);
+                    double beta = ((az - cz) * dy - (ay - cy) * dz) * (ax - lx) - ((az - cz) * dx - (ax - cx) * dz) * (ay - ly) + ((ay - cy) * dx - (ax - cx) * dy) * (az - lz);
+                    beta /= mmdet;
+                    double gamma = ((az - lz) * dy - (ay - ly) * dz) * (ax - bx) - ((az - lz) * dx - (ax - lx) * dz) * (ay - by) + ((ay - ly) * dx - (ax - lx) * dy) * (az - bz);
+                    gamma /= mmdet;
+                    double t = ((ay - ly) * (az - cz) - (ay - cy) * (az - lz)) * (ax - bx) - ((ax - lx) * (az - cz) - (ax - cx) * (az - lz)) * (ay - by) + ((ax - lx) * (ay - cy) - (ax - cx) * (ay - ly)) * (az - bz);
+                    t /= mmdet;
 
                     //Test for collision
                     if (beta >= 0 && gamma >= 0 && beta + gamma <= 1 && t > 0.000001 && t < nearest) {
@@ -168,7 +176,7 @@ public class Camera {
                         Vector3D v3 = new Vector3D(cx, cy, cz);
 
                         //Compute normal
-                        Vector3D normal = v1.subtract(v2).crossProduct(v2.subtract(v3)).normalize();
+                        Vector3D normal = v1.subtract(v2).crossProduct(v1.subtract(v3)).normalize();
 
                         //Invert normal if it's not facing the source
                         if (normal.dotProduct(direction) < -0.000001) {
@@ -221,6 +229,10 @@ public class Camera {
 
     public void setScene(Scene scene) {
         this.scene = scene;
+    }
+
+    public void setRecursionLevel(int level) {
+        this.recursionLevel = level;
     }
 
     public Scene getScene() {
